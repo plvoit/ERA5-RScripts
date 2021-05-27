@@ -2,7 +2,7 @@
 # Copyright (C) 2020 Paul Voit
 
 rm(list = ls())
-setwd("~/Workspace/GFZ/ERA5")
+setwd("~/Workspace/GFZ/ERA5-PressureLevels")
 
 library(ncdf4)
 library(raster)
@@ -10,6 +10,9 @@ library(rgdal)
 library(foreach)
 library(doParallel)
 library(PaulsPack)
+
+#station to extract
+station_name <- "JUNG"
 
 vars <- c('t','r','q')
 p_levels <-  c("100","250","500","750","1000")
@@ -67,8 +70,8 @@ for( i in 1:length(p_levels)){
     proc.time()-ptm
 
     #subset shape for just one station
-    station <- stations[stations@data$Station == "ATHN",]
-
+    station <- stations[stations@data$Station == station_name,]
+    
 
     # extract raster values at station location
     # timestep. Create dataframe with one column for every feature
@@ -91,20 +94,7 @@ for( i in 1:length(p_levels)){
 proc.time()-ptm_all  
 
 #save for later use
-write.csv(DF, file = "ATHN.txt", row.names = FALSE)
+write.csv(DF, file = paste0(station_name,".txt"), row.names = FALSE)
 
 
-## NCEP is 6-hourly needs to be aggregated to daily
-
-DF_mean_daily <- aggregate_by_time(DF_mean,c(1:75),"1 day",mean)
-
-#rename date column
-colnames(DF_mean_daily)[1] <-  "Date"
-
-# format the date column
-DF_mean_daily$Date <- as.POSIXct(DF_mean_daily$Date)
-DF_mean_daily$Date <- as.POSIXct(format(DF_mean_daily$Date, "%Y-%m-%d"))
-
-
-write.csv(DF_mean_daily, file = "NCEP2000_2009_rHum_at_75subbasins.txt", row.names = FALSE)
 

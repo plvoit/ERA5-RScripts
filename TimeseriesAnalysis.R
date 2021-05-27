@@ -5,7 +5,8 @@ library(zoo)
 library(tidyr)
 library(dplyr)
 library(ggplot2)
-
+library(zyp)
+library(Kendall)
 
 
 station_name = "ATHN"
@@ -38,8 +39,6 @@ Station <- aggregate_by_time(Station,c(2:ncol(Station)),"3 hour",mean, right = F
 # same length for both dataframes
 CR <- CR[CR$Date <= max(Station$Date),]
 
-## moving window cross correlation
-
 
 # join CRNS and ERA5-data
 df  <- cbind(Station, CR[station_name])
@@ -52,6 +51,18 @@ df[is.na(df[,ncol(df)]),ncol(df)] <- mean(df[,ncol(df)],na.rm = T)
 
 # rename last column 
 names(df)[ncol(df)] <- paste0(station_name,"_CRNS")
+
+##Check for trend
+sig <- c()
+for (i in 2:(ncol(df)-1)){
+dummy <- MannKendall(df[,i])
+sig[i-1] <- dummy$sl
+}
+
+#Sen slope
+##ADD timestep variable but this might mess with later operations. delete again
+df$timestep <- c(1:nrow(df))
+zyp.sen(ATHN_100_t ~ timestep, df)
 
 ## make one dataframe with the correlation results
 results_cor <- list()
@@ -94,7 +105,7 @@ for(i in 1:(ncol(results_cor)-1)){
 
 summary(results_cor)
 
-##detrend??
+
 
 
 ## Wavelet
