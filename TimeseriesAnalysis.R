@@ -36,6 +36,10 @@ Station$Date <- as.POSIXct(Station$Date)
 
 Station <- aggregate_by_time(Station,c(2:ncol(Station)),"3 hour",mean, right = F)
 
+## aggregate to days
+Station <-  aggregate_by_time(Station,c(2:ncol(Station)),"1 day",mean, right = T)
+CR <-  aggregate_by_time(CR,c(2:ncol(CR)),"1 day",mean, right = T)
+CR <-  CR[-nrow(CR),]
 # same length for both dataframes
 CR <- CR[CR$Date <= max(Station$Date),]
 
@@ -52,17 +56,17 @@ df[is.na(df[,ncol(df)]),ncol(df)] <- mean(df[,ncol(df)],na.rm = T)
 # rename last column 
 names(df)[ncol(df)] <- paste0(station_name,"_CRNS")
 
-##Check for trend
-sig <- c()
-for (i in 2:(ncol(df)-1)){
-dummy <- MannKendall(df[,i])
-sig[i-1] <- dummy$sl
-}
-
-#Sen slope
-##ADD timestep variable but this might mess with later operations. delete again
-df$timestep <- c(1:nrow(df))
-zyp.sen(ATHN_100_t ~ timestep, df)
+# ##Check for trend
+# sig <- c()
+# for (i in 2:(ncol(df)-1)){
+# dummy <- MannKendall(df[,i])
+# sig[i-1] <- dummy$sl
+# }
+# 
+# #Sen slope
+# ##ADD timestep variable but this might mess with later operations. delete again
+# df$timestep <- c(1:nrow(df))
+# zyp.sen(ATHN_100_t ~ timestep, df)
 
 ## make one dataframe with the correlation results
 results_cor <- list()
@@ -70,14 +74,14 @@ results_cor <- list()
 #doesn't work when the dataframe contains a POSix element. So it has to be taken out
 for (i in 2:(ncol(df)-1)){
   dummy = as.data.frame(cbind(df[,i],df[,ncol(df)]))
-  results_cor[[i-1]] <- rollapply(dummy,width=30, function(x) cor(x[,1],x[,2], method = "spearman"), by.column=FALSE)
+  results_cor[[i-1]] <- rollapply(dummy,width=31, function(x) cor(x[,1],x[,2], method = "spearman"), by.column=FALSE)
   results_cor[[i-1]] <- as.data.frame(results_cor[[i-1]])
   names(results_cor[[i-1]])[1] <- names(Station)[i]
 }
 
 # list to dataframe
 results_cor  <- do.call(cbind, results_cor)
-results_cor$Date <- CR$Date[15:(nrow(CR)-15)]
+results_cor$Date <- CR$Date[15:(nrow(CR)-16)] # evt. automatisieren
 
 
 #There should be a dataframe with all the variables for ATHENS, Locations and date (timestep). The format for this is a bit weird.
@@ -89,13 +93,39 @@ names(plot_df) <- c("Date", "Level","Correlation")
 plot_df <- plot_df[order(plot_df$Date),]
 plot_df$Level <- as.factor(plot_df$Level)
 row.names(plot_df) <- NULL
+# select variable
+plot_df_t <- plot_df[grep("_t",plot_df$Level),]
+plot_df_t$Level <- ordered(plot_df_t$Level, levels = c(paste0(station_name,"_1000"),paste0(station_name,"_750"),paste0(station_name,"_500")
+                                                       ,paste0(station_name,"_250"),paste0(station_name,"_100"))) 
+
+# "JUNG_1000_q", "JUNG_750_q", "JUNG_500_q", "JUNG_250_q","JUNG_100_q",
+# "JUNG_1000_r","JUNG_750_r","JUNG_500_r","JUNG_250_r","JUNG_100_r"))                                                   
 
 ## plot heatmap
-p <- ggplot(plot_df, aes(x=Date, y=Level, fill=Correlation))+
+p <- ggplot(plot_df_t, aes(x=Date, y=Level, fill=Correlation))+
   scale_fill_viridis_c() +
   #scale_x_continuous(name="Year", limits=c(0, 2020)) +
   geom_tile() 
  #+ scale_color_gradient(low="blue", high="red")
+print(p)
+
+# 3 heatmaps für t,q,r
+
+# select variable #ändern station name mit paste
+plot_df_t <- plot_df[grep("_t",plot_df$Level),]
+plot_df_t$Level <- ordered(plot_df_t$Level, levels = c(paste0(station_name,"_1000_t"),paste0(station_name,"_750_t"),paste0(station_name,"_500_t")
+                                                       ,paste0(station_name,"_250_t"),paste0(station_name,"_100_t"))) 
+
+
+# "JUNG_1000_q", "JUNG_750_q", "JUNG_500_q", "JUNG_250_q","JUNG_100_q",
+# "JUNG_1000_r","JUNG_750_r","JUNG_500_r","JUNG_250_r","JUNG_100_r"))                                                   
+
+## plot heatmap
+p <- ggplot(plot_df_t, aes(x=Date, y=Level, fill=Correlation))+
+  scale_fill_viridis_c() +
+  #scale_x_continuous(name="Year", limits=c(0, 2020)) +
+  geom_tile() 
+#+ scale_color_gradient(low="blue", high="red")
 print(p)
 
 #plot correlation for each level
@@ -104,9 +134,15 @@ for(i in 1:(ncol(results_cor)-1)){
 }
 
 summary(results_cor)
+length(results_cor$ATHN_1000_t[results_cor$ATHN_1000_t < 0])
+length(results_cor$ATHN_1000_t[results_cor$ATHN_1000_t > 0])
 
+hist(results_cor$JUNG_1000_t, breaks = 100)
+plot(cumsum(results_cor$JUNG_1000_t))
+summary(results_cor$JUNG_1000_t)
 
-
+hist(results_cor$JUNG_100_t)
+summary(results_cor$JUNG_100_t)
 
 ## Wavelet
 # install.packages("biwavelet")
@@ -122,14 +158,17 @@ CR[is.na(CR$Station),2] <- mean(CR$Station, na.rm = T)
 summary(CR)
 
 # Cross Wavelet
-wv.cx <- xwt(CR[,c(10,2)],Station[,c(17,2)],mother = "morlet")
+wv.cx <- xwt(CR[,c(10,2)],Station[,c(17,14)],mother = "morlet")
 plot(wv.cx)
 
 # Wavelet coherence
-wv.coh <- wtc(CR[c(1:2000),c(10,2)],Station[c(1:2000),c(17,2)],mother = "morlet")
-plot(wv.coh,plot.cb=F, plot.phase=T,main="CRNS vs. t_100")
+wv.coh <- wtc(CR[,c(10,2)],Station[,c(17,14)],mother = "dog")
+plot(wv.coh,plot.cb=F, plot.phase=T,main="CRNS vs. t_1000")
+abline(v = 1000, lty = 1, lwd = 2, col = "white")
 
 save.image("Wavelet.RData")
 load("Wavelet.RData")
+
+#periode rausfinden bei maximum
 
 
