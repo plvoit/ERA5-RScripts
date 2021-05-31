@@ -7,6 +7,7 @@ library(dplyr)
 library(ggplot2)
 library(zyp)
 library(Kendall)
+library(biwavelet)
 
 
 station_name = "ATHN"
@@ -93,60 +94,52 @@ names(plot_df) <- c("Date", "Level","Correlation")
 plot_df <- plot_df[order(plot_df$Date),]
 plot_df$Level <- as.factor(plot_df$Level)
 row.names(plot_df) <- NULL
-# select variable
-plot_df_t <- plot_df[grep("_t",plot_df$Level),]
-plot_df_t$Level <- ordered(plot_df_t$Level, levels = c(paste0(station_name,"_1000"),paste0(station_name,"_750"),paste0(station_name,"_500")
-                                                       ,paste0(station_name,"_250"),paste0(station_name,"_100"))) 
 
-# "JUNG_1000_q", "JUNG_750_q", "JUNG_500_q", "JUNG_250_q","JUNG_100_q",
-# "JUNG_1000_r","JUNG_750_r","JUNG_500_r","JUNG_250_r","JUNG_100_r"))                                                   
+#save.image("Plots.R")
 
-## plot heatmap
-p <- ggplot(plot_df_t, aes(x=Date, y=Level, fill=Correlation))+
-  scale_fill_viridis_c() +
-  #scale_x_continuous(name="Year", limits=c(0, 2020)) +
-  geom_tile() 
- #+ scale_color_gradient(low="blue", high="red")
-print(p)
-
+load("Plots.R")
+#create plots for all the variables
 # 3 heatmaps für t,q,r
-
-# select variable #ändern station name mit paste
-plot_df_t <- plot_df[grep("_t",plot_df$Level),]
-plot_df_t$Level <- ordered(plot_df_t$Level, levels = c(paste0(station_name,"_1000_t"),paste0(station_name,"_750_t"),paste0(station_name,"_500_t")
-                                                       ,paste0(station_name,"_250_t"),paste0(station_name,"_100_t"))) 
-
-
-# "JUNG_1000_q", "JUNG_750_q", "JUNG_500_q", "JUNG_250_q","JUNG_100_q",
-# "JUNG_1000_r","JUNG_750_r","JUNG_500_r","JUNG_250_r","JUNG_100_r"))                                                   
-
-## plot heatmap
-p <- ggplot(plot_df_t, aes(x=Date, y=Level, fill=Correlation))+
-  scale_fill_viridis_c() +
-  #scale_x_continuous(name="Year", limits=c(0, 2020)) +
-  geom_tile() 
-#+ scale_color_gradient(low="blue", high="red")
-print(p)
-
-#plot correlation for each level
-for(i in 1:(ncol(results_cor)-1)){
-  plot(results_cor[,i]~results_cor$Date, type = "l", main = paste0("Corr. CRNS ~ ", colnames(results_cor)[i]))
+i = 1
+variables <-c("t","g","r")
+windows()
+for (i in 1:length(variables)){
+  # select variable
+  plot_df_var <- plot_df[grep(paste0(variables[i]),plot_df$Level),]
+  ##ADD Level 10 paste0(station_name,"_10","_",variables[i])
+  plot_df_var$Level <- ordered(plot_df_var$Level, levels = c(paste0(station_name,"_1000","_",variables[i]),paste0(station_name,"_750","_",variables[i]),
+                                                             paste0(station_name,"_500","_",variables[i]),paste0(station_name,"_250","_",variables[i]),
+                                                             paste0(station_name,"_100","_",variables[i])))
+  
+  png(file = paste0(station_name,"_", variables[i],"_correlation_heatmap",".png"), bg = "white", width = 2480, height = 1748, res = 300)
+  p <- ggplot(plot_df_var, aes(x=Date, y=Level, fill=Correlation))+
+    scale_fill_viridis_c() +
+    geom_tile() +
+    labs(title = paste0(station_name,"_", variables[i]))
+  print(p)
+  dev.off()
 }
+                                                  
 
-summary(results_cor)
-length(results_cor$ATHN_1000_t[results_cor$ATHN_1000_t < 0])
-length(results_cor$ATHN_1000_t[results_cor$ATHN_1000_t > 0])
+# #plot correlation for each level
+# for(i in 1:(ncol(results_cor)-1)){
+#   plot(results_cor[,i]~results_cor$Date, type = "l", main = paste0("Corr. CRNS ~ ", colnames(results_cor)[i]))
+# }
 
-hist(results_cor$JUNG_1000_t, breaks = 100)
-plot(cumsum(results_cor$JUNG_1000_t))
-summary(results_cor$JUNG_1000_t)
+# summary(results_cor)
+# length(results_cor$ATHN_1000_t[results_cor$ATHN_1000_t < 0])
+# length(results_cor$ATHN_1000_t[results_cor$ATHN_1000_t > 0])
 
-hist(results_cor$JUNG_100_t)
-summary(results_cor$JUNG_100_t)
+# plot the histogram for the correlations
+for (i in 1:ncol(results_cor)){
+  png(file = paste0(station_name,"_", variables[i],"_Histogramm_correlation",".png"), bg = "white", width = 2480, height = 1748, res = 300)
+  hist(results_cor[,i], breaks = 100)
+  dev.off()
+}
 
 ## Wavelet
 # install.packages("biwavelet")
-library(biwavelet)
+
 
 # date to timestep
 CR$Timestep <- c(1:nrow(CR))
@@ -155,20 +148,26 @@ Station$Timestep <- c(1:nrow(Station))
 #remove missing values from CR
 CR[,2:ncol(CR)] <- na.approx(CR[,2:ncol(CR)])
 CR[is.na(CR$Station),2] <- mean(CR$Station, na.rm = T)
-summary(CR)
 
-# Cross Wavelet
-wv.cx <- xwt(CR[,c(10,2)],Station[,c(17,14)],mother = "morlet")
-plot(wv.cx)
 
+# # Cross Wavelet
+# wv.cx <- xwt(CR[,c(10,2)],Station[,c(17,14)],mother = "morlet")
+# plot(wv.cx)
+
+## Proceed here, Subsetting CR with station name, 
+# another loop for variables, subsetting Station with variables, like above
+for(i in 1:length(variables)){
 # Wavelet coherence
-wv.coh <- wtc(CR[,c(10,2)],Station[,c(17,14)],mother = "dog")
+wv.coh <- wtc(CR[,c(10,2)],Station[,c(17,14)],mother = "morlet")
 plot(wv.coh,plot.cb=F, plot.phase=T,main="CRNS vs. t_1000")
 abline(v = 1000, lty = 1, lwd = 2, col = "white")
 
+
+}
 save.image("Wavelet.RData")
 load("Wavelet.RData")
 
 #periode rausfinden bei maximum
+
 
 
