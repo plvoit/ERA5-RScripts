@@ -95,9 +95,7 @@ plot_df <- plot_df[order(plot_df$Date),]
 plot_df$Level <- as.factor(plot_df$Level)
 row.names(plot_df) <- NULL
 
-#save.image("Plots.R")
 
-load("Plots.R")
 #create plots for all the variables
 # 3 heatmaps für t,q,r
 i = 1
@@ -154,14 +152,30 @@ CR[is.na(CR$Station),2] <- mean(CR$Station, na.rm = T)
 # wv.cx <- xwt(CR[,c(10,2)],Station[,c(17,14)],mother = "morlet")
 # plot(wv.cx)
 
-## Proceed here, Subsetting CR with station name, 
-# another loop for variables, subsetting Station with variables, like above
+#Wavelet Coherence plots for all variables and pressure levels 10,100,1000
 for(i in 1:length(variables)){
-# Wavelet coherence
-wv.coh <- wtc(CR[,c(10,2)],Station[,c(17,14)],mother = "morlet")
-plot(wv.coh,plot.cb=F, plot.phase=T,main="CRNS vs. t_1000")
-abline(v = 1000, lty = 1, lwd = 2, col = "white")
-
+  # Wavelet coherence
+  wv.coh <- wtc(CR[,c(10,grep(station_name,colnames(CR)))],Station[,c(17,grep(paste0(station_name,"_100_", variables[i]),colnames(Station)))],mother = "morlet")
+  png(file = paste0(station_name,"_", variables[i],"_100","_Wavelet",".png"), bg = "white", width = 2480, height = 1748, res = 300)
+  plot(wv.coh,plot.cb=F, plot.phase=T,
+       main=paste0("Wavelet Coherence CRNS ", station_name, " ~ ", variables[i],"_100"), xaxt = "n")
+  axis(1, at = seq(0,3653, 365), labels = c("2011","2012","2013","2014","2015","2016","2017","2018","2019","2020","2021"))
+  abline(h = log2(365), lwd = 3, col = "white", lty = 2)
+  dev.off()
+  
+  wv.coh <- wtc(CR[,c(10,grep(station_name,colnames(CR)))],Station[,c(17,grep(paste0(station_name,"_1000_", variables[i]),colnames(Station)))],mother = "morlet")
+  png(file = paste0(station_name,"_", variables[i],"_1000","_Wavelet",".png"), bg = "white", width = 2480, height = 1748, res = 300)
+  plot(wv.coh,plot.cb=F, plot.phase=T,main=paste0("Wavelet Coherence CRNS ", station_name, " ~ ", variables[i],"_1000"),xaxt = "n")
+  axis(1, at = seq(0,3653, 365), labels = c("2011","2012","2013","2014","2015","2016","2017","2018","2019","2020","2021"))
+  abline(h = log2(365), lwd = 3, col = "white", lty = 2)
+  dev.off()
+  
+  wv.coh <- wtc(CR[,c(10,grep(station_name,colnames(CR)))],Station[,c(17,grep(paste0(station_name,"_10_", variables[i]),colnames(Station)))],mother = "morlet")
+  png(file = paste0(station_name,"_", variables[i],"_10","_Wavelet",".png"), bg = "white", width = 2480, height = 1748, res = 300)
+  plot(wv.coh,plot.cb=F, plot.phase=T,main=paste0("Wavelet Coherence CRNS ", station_name, " ~ ", variables[i],"_10"),xaxt = "n")
+  axis(1, at = seq(0,3653, 365), labels = c("2011","2012","2013","2014","2015","2016","2017","2018","2019","2020","2021"))
+  abline(h = log2(365), lwd = 3, col = "white", lty = 2)
+  dev.off()
 
 }
 save.image("Wavelet.RData")
@@ -169,5 +183,5 @@ load("Wavelet.RData")
 
 #periode rausfinden bei maximum
 
-
-
+# maximum <- as.data.frame(wv.coh$power.corr)
+# plot(maximum[1,], type = "l")
