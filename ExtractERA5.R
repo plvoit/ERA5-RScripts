@@ -1,4 +1,6 @@
-# JUNG and ATHEN need extraction. The other should fit. Check in QGIS
+# This script takes the files provided by DownloadERA5.py and processes them into a csv-file
+# Just set the station name for the station to be processed
+# The resulting csv-file is the input for the script TimeseriesAnalysis.R
 # Copyright (C) 2020 Paul Voit
 
 rm(list = ls())
@@ -12,10 +14,13 @@ library(doParallel)
 library(PaulsPack)
 
 #station to extract
-station_name <- "JUNG"
+# PUT STATION NAME HERE
+station_name <- "THUL"
 
+
+#"10",
 vars <- c('t','r','q')
-p_levels <-  c("100","250","500","750","1000")
+p_levels <-  c("10","100","250","500","750","1000")
 
 # load shapefile of stations for extraction
 stations <- readOGR("GIS/Stations.shp")

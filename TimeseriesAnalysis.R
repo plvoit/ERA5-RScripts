@@ -1,3 +1,6 @@
+# This script generates correlation heatmaps (rolling window spearman correlation, width = 31 days)
+# histograms and Wavelet coherence plots (Morlet wavelet) and saves them in the workspace
+
 rm(list = ls())
 setwd("~/Workspace/GFZ/ERA5-PressureLevels")
 library(PaulsPack)
@@ -9,8 +12,8 @@ library(zyp)
 library(Kendall)
 library(biwavelet)
 
-
-station_name = "ATHN"
+# Station to be processed
+station_name = "THUL"
 
 #load ERA5 data
 Station <- read.csv(paste0(station_name,".txt"))
@@ -22,7 +25,6 @@ CR$Date <- as.POSIXct(CR$Date)
 
 # there are some weird white spaces in some cells. Delete
 CR[,2:ncol(CR)] <- lapply(CR[,2:ncol(CR)], function(x) as.numeric(gsub(" ","",x)))
-
 
 #plot(Station$Station_100_t~Station$Date, type = "l")
 #plot(CR$Station~CR$Date, type = "l")
@@ -44,13 +46,12 @@ CR <-  CR[-nrow(CR),]
 # same length for both dataframes
 CR <- CR[CR$Date <= max(Station$Date),]
 
-
 # join CRNS and ERA5-data
 df  <- cbind(Station, CR[station_name])
 
 #remove NAs
 df[,c(2:ncol(df))] <- na.approx(df[,c(2:ncol(df))] )
-summary(df)
+#summary(df)
 #theres some NA's left at the end. for now just fill up with mean.. The last column is always the CRNS station
 df[is.na(df[,ncol(df)]),ncol(df)] <- mean(df[,ncol(df)],na.rm = T)
 
@@ -98,22 +99,21 @@ row.names(plot_df) <- NULL
 
 #create plots for all the variables
 # 3 heatmaps für t,q,r
-i = 1
-variables <-c("t","g","r")
-windows()
+variables <-c("t","q","r")
+
 for (i in 1:length(variables)){
   # select variable
   plot_df_var <- plot_df[grep(paste0(variables[i]),plot_df$Level),]
-  ##ADD Level 10 paste0(station_name,"_10","_",variables[i])
   plot_df_var$Level <- ordered(plot_df_var$Level, levels = c(paste0(station_name,"_1000","_",variables[i]),paste0(station_name,"_750","_",variables[i]),
                                                              paste0(station_name,"_500","_",variables[i]),paste0(station_name,"_250","_",variables[i]),
-                                                             paste0(station_name,"_100","_",variables[i])))
+                                                             paste0(station_name,"_100","_",variables[i]),paste0(station_name,"_10","_",variables[i])))
   
   png(file = paste0(station_name,"_", variables[i],"_correlation_heatmap",".png"), bg = "white", width = 2480, height = 1748, res = 300)
   p <- ggplot(plot_df_var, aes(x=Date, y=Level, fill=Correlation))+
     scale_fill_viridis_c() +
     geom_tile() +
-    labs(title = paste0(station_name,"_", variables[i]))
+    labs(title = paste0(station_name,"_", variables[i])) +
+    ggtitle(paste0("Correlation CRNS ~ ",station_name,"_", variables[i] ))
   print(p)
   dev.off()
 }
@@ -128,16 +128,17 @@ for (i in 1:length(variables)){
 # length(results_cor$ATHN_1000_t[results_cor$ATHN_1000_t < 0])
 # length(results_cor$ATHN_1000_t[results_cor$ATHN_1000_t > 0])
 
+
+### CHECK AND add main title
 # plot the histogram for the correlations
-for (i in 1:ncol(results_cor)){
-  png(file = paste0(station_name,"_", variables[i],"_Histogramm_correlation",".png"), bg = "white", width = 2480, height = 1748, res = 300)
-  hist(results_cor[,i], breaks = 100)
+for (i in 1:(ncol(results_cor)-1)){
+  png(file = paste0(colnames(results_cor)[i], "_Histogram_correlation.png"), bg = "white", width = 2480, height = 1748, res = 300)
+  hist(results_cor[,i], breaks = 70, main = paste0("Histogram of correlation ", colnames(results_cor)[i]), xlab = "Spearman correlation")
   dev.off()
 }
 
 ## Wavelet
 # install.packages("biwavelet")
-
 
 # date to timestep
 CR$Timestep <- c(1:nrow(CR))
@@ -151,11 +152,12 @@ CR[is.na(CR$Station),2] <- mean(CR$Station, na.rm = T)
 # # Cross Wavelet
 # wv.cx <- xwt(CR[,c(10,2)],Station[,c(17,14)],mother = "morlet")
 # plot(wv.cx)
-
+i=1
+windows()
 #Wavelet Coherence plots for all variables and pressure levels 10,100,1000
 for(i in 1:length(variables)){
   # Wavelet coherence
-  wv.coh <- wtc(CR[,c(10,grep(station_name,colnames(CR)))],Station[,c(17,grep(paste0(station_name,"_100_", variables[i]),colnames(Station)))],mother = "morlet")
+  wv.coh <- wtc(CR[,c(10,grep(station_name,colnames(CR)))],Station[,c(grep("Timestep",colnames(Station)),grep(paste0(station_name,"_100_", variables[i]),colnames(Station)))],mother = "morlet")
   png(file = paste0(station_name,"_", variables[i],"_100","_Wavelet",".png"), bg = "white", width = 2480, height = 1748, res = 300)
   plot(wv.coh,plot.cb=F, plot.phase=T,
        main=paste0("Wavelet Coherence CRNS ", station_name, " ~ ", variables[i],"_100"), xaxt = "n")
@@ -163,14 +165,14 @@ for(i in 1:length(variables)){
   abline(h = log2(365), lwd = 3, col = "white", lty = 2)
   dev.off()
   
-  wv.coh <- wtc(CR[,c(10,grep(station_name,colnames(CR)))],Station[,c(17,grep(paste0(station_name,"_1000_", variables[i]),colnames(Station)))],mother = "morlet")
+  wv.coh <- wtc(CR[,c(10,grep(station_name,colnames(CR)))],Station[,c(grep("Timestep",colnames(Station)),grep(paste0(station_name,"_1000_", variables[i]),colnames(Station)))],mother = "morlet")
   png(file = paste0(station_name,"_", variables[i],"_1000","_Wavelet",".png"), bg = "white", width = 2480, height = 1748, res = 300)
   plot(wv.coh,plot.cb=F, plot.phase=T,main=paste0("Wavelet Coherence CRNS ", station_name, " ~ ", variables[i],"_1000"),xaxt = "n")
   axis(1, at = seq(0,3653, 365), labels = c("2011","2012","2013","2014","2015","2016","2017","2018","2019","2020","2021"))
   abline(h = log2(365), lwd = 3, col = "white", lty = 2)
   dev.off()
   
-  wv.coh <- wtc(CR[,c(10,grep(station_name,colnames(CR)))],Station[,c(17,grep(paste0(station_name,"_10_", variables[i]),colnames(Station)))],mother = "morlet")
+  wv.coh <- wtc(CR[,c(10,grep(station_name,colnames(CR)))],Station[,c(grep("Timestep",colnames(Station)),grep(paste0(station_name,"_10_", variables[i]),colnames(Station)))],mother = "morlet")
   png(file = paste0(station_name,"_", variables[i],"_10","_Wavelet",".png"), bg = "white", width = 2480, height = 1748, res = 300)
   plot(wv.coh,plot.cb=F, plot.phase=T,main=paste0("Wavelet Coherence CRNS ", station_name, " ~ ", variables[i],"_10"),xaxt = "n")
   axis(1, at = seq(0,3653, 365), labels = c("2011","2012","2013","2014","2015","2016","2017","2018","2019","2020","2021"))
@@ -178,10 +180,19 @@ for(i in 1:length(variables)){
   dev.off()
 
 }
-save.image("Wavelet.RData")
-load("Wavelet.RData")
+#save.image("Wavelet.RData")
+#load("Wavelet.RData")
 
 #periode rausfinden bei maximum
 
 # maximum <- as.data.frame(wv.coh$power.corr)
 # plot(maximum[1,], type = "l")
+
+# # Daniel
+# -trends?
+
+
+# with in-phase
+# pointing right, anti-phase
+# pointing left, and BMI leading AO
+# by 90° pointing straight down).
