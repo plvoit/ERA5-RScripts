@@ -10,7 +10,8 @@ stations <-  c("AATB", "ATHN", "INVK", "JUNG",  "NAIN", "NANM", "SOPO", "THUL")
 levels <- c("10", "100", "1000")
 
 rollmean <- TRUE
-window_size <- 31 
+window_size <- 91
+
 
 for (i in 1:length(levels)){
   par(mfrow=c(2,2))
