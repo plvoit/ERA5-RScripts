@@ -7,8 +7,6 @@ rm(list = ls())
 
 library(stars)
 
-
-
 #take the timeseries of one pressure level to extract time vector
 all_files <- dir("Data", full.names = TRUE, pattern = '.nc' )
 

@@ -11,7 +11,7 @@ library(rgdal)
 library(stars)
 
 ##open correlation raster
-cor <- raster("cor_2011.tif")
+cor <- raster("cor_2012.tif")
 #warning, data is flipped, flip back
 cor <- flip(cor,"y")
 
@@ -23,8 +23,8 @@ crns <- readOGR("../ERA5-PressureLevels/GIS/Stations.shp")
 #select just station Jungfrauenjoch
 crns <- crns[crns@data$Station == "JUNG",]
 
-png(file = "cor_2011JUNG.png", bg = "white", width = 2480, height = 1748, res = 300)
-plot(cor, main = "Correlation surface pressure ~ CRNS Jungfrauenjoch 2011")
+png(file = "cor_2012JUNG.png", bg = "white", width = 2480, height = 1748, res = 300)
+plot(cor, main = "Correlation surface pressure ~ CRNS Jungfrauenjoch 2012")
 plot(world,add = T)
-plot(Jung, add = TRUE, col = "red", cex = 1, lwd = 1, pch = 4)
+plot(crns, add = TRUE, col = "red", cex = 1, lwd = 1, pch = 4)
 dev.off()
