@@ -5,7 +5,7 @@ library(PaulsPack)
 library(zoo)
 
 stations <-  c("AATB", "ATHN", "INVK", "JUNG",  "NAIN", "NANM", "SOPO", "THUL")
-#testets
+
 
 levels <- c("10", "100", "1000")
 
