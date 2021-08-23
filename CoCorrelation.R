@@ -9,7 +9,7 @@ library(ncdf4)
 cor <- read.csv("~/Workspace/GFZ/ERA5Global/corr_2011.csv")
 
 #world shape
-world <- readOGR("coastline/ne_110m_coastline.shp")
+#world <- readOGR("coastline/ne_110m_coastline.shp")
 
 #shapefile for CRNS stations
 crns <- readOGR("../ERA5-PressureLevels/GIS/Stations.shp")
@@ -17,12 +17,9 @@ crns <- readOGR("../ERA5-PressureLevels/GIS/Stations.shp")
 crns <- crns[crns@data$Station == "JUNG",]
 
 # identify the maximum (absolute correlation)
-which.max(abs(cor))
-test <- apply(cor,2,function(x)  which.max(x))
 abs_cor <- abs(cor)
 max = which(abs_cor == max(abs_cor), arr.ind = TRUE) 
 max = max[1,]
-cor[max]
 
 #take the timeseries of one pressure level to extract time vector
 all_files <- dir("Data", full.names = TRUE, pattern = '.nc' )
@@ -41,6 +38,14 @@ cube <- read_stars("cube.tif")
 cor_raster <- st_apply(cube, 1:2, function(x) cor(x,station$Count, method = "spearman"))
 
 #save cor_raster as tif, load with raster package
+write_stars(cor_raster,"cocor_2011_step1.tif")
+
+cocor1 <- raster("cocor_2011_step1.tif")
+#warning, data is flipped, flip back
+cor <- flip(cor,"y")
+
+head(cor[[1]])
+
 
 png(file = "cocorStep1_2011JUNG.png", bg = "white", width = 2480, height = 1748, res = 300)
 plot(cor_raster, main = "CoCorrelation surface pressure ~ CRNS Jungfrauenjoch 2012")

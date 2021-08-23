@@ -28,3 +28,28 @@ plot(cor, main = "Correlation surface pressure ~ CRNS Jungfrauenjoch 2012")
 plot(world,add = T)
 plot(crns, add = TRUE, col = "red", cex = 1, lwd = 1, pch = 4)
 dev.off()
+
+### Plot CoCorrelation Rasters
+
+CoCor1 <- raster("cocor_2011_step1Final.tif")
+png(file = "cocor_Step1_2011JUNG.png", bg = "white", width = 2480, height = 1748, res = 300)
+plot(CoCor1, main = "CoCorrelation Step 1 surface pressure ~ CRNS Jungfrauenjoch 2011")
+plot(world,add = T)
+plot(crns, add = TRUE, col = "red", cex = 1, lwd = 1, pch = 4)
+dev.off()
+
+CoCor2 <- raster("cocor_2011_step2Final.tif")
+png(file = "cocor_Step2_2011JUNG.png", bg = "white", width = 2480, height = 1748, res = 300)
+plot(CoCor1, main = "CoCorrelation Step 2 surface pressure ~ CRNS Jungfrauenjoch 2011")
+plot(world,add = T)
+plot(crns, add = TRUE, col = "red", cex = 1, lwd = 1, pch = 4)
+dev.off()
+
+CoCor3 <- raster("cocor_2011_step3Final.tif")
+png(file = "cocor_Step3_2011JUNG.png", bg = "white", width = 2480, height = 1748, res = 300)
+plot(CoCor1, main = "CoCorrelation Step 3 surface pressure ~ CRNS Jungfrauenjoch 2011")
+plot(world,add = T)
+plot(crns, add = TRUE, col = "red", cex = 1, lwd = 1, pch = 4)
+dev.off()
+
+
